@@ -7,7 +7,6 @@ from flask import Flask, request, Response
 from flask.json import jsonify
 from flask_cors import CORS, cross_origin
 
-
 app = Flask(__name__)
 cors = CORS(app)
 
@@ -68,6 +67,9 @@ class Questions(db.Model):
         self.who = who
         self.res = res
 
+_details = None
+_email = None
+
 @app.route('/hello')
 def home():
     message = "Hello World, I'm Ratan"
@@ -87,11 +89,24 @@ def register():
 
 @app.route('/login',methods=["POST"])
 def login():
+    global _email
     if request.method == "POST":
         request_data = json.loads(request.data)
         print(request_data)
+        _email = request_data['email']
+        print(_email)
         return Response(json.dumps(request_data), status=201, mimetype='application/json')
 
+
+@app.route('/details',methods=["POST"])
+def getDetails():
+    global _details
+    if request.method == "POST":
+        request_data = json.loads(request.data)
+        print(request_data)
+        _details = list(request_data.values())
+        print(_details)   
+        return Response(json.dumps(request_data), status=201, mimetype='application/json')
 
 @app.route('/predict',methods=["POST"])
 def predict():
@@ -101,7 +116,7 @@ def predict():
         questions = []
         for i,j in request_data.items():
             questions.append(j)
-        features = [0 if int(x)<0 else 1 for x in questions[:10]] + [int(x) for x in questions[10:]]
+        features = [0 if int(x)<0 else 1 for x in questions] + [int(x) for x in _details[1:]]
         final_features = [np.array(features)]
         prediction = model.predict(final_features)
         print(final_features)
