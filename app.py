@@ -3,7 +3,7 @@ import pickle
 import json
 from flask_sqlalchemy import SQLAlchemy
 
-from flask import Flask, request, Response
+from flask import Flask, request, Response,jsonify
 from flask.json import jsonify
 from flask_cors import CORS, cross_origin
 from sqlalchemy.orm import backref
@@ -71,14 +71,71 @@ class Questions(db.Model):
         self.res = res
         self.owner_id = owner
 
-_details = None
-# _email = None
+    def to_json(self):
+        return {
+            'id':self.id,
+            'q1':self.q1,
+            'q2':self.q2,
+            'q3':self.q3,
+            'q4':self.q4,
+            'q5':self.q5,
+            'q6':self.q6,
+            'q7':self.q7,
+            'q8':self.q8,
+            'q9':self.q9,
+            'q10':self.q10,
+            'age':self.age,
+            'gender':self.gender,
+            'jaundice':self.jaundice,
+            'who':self.who,
+            'result':self.res,
+            'owner':self.owner_id
+        }
 
+class Doctor(db.Model):
+    __tablename__ = 'doctor'
+    doc_id = db.Column(db.Integer, primary_key = True)
+    name = db.Column(db.String(100))
+    designation = db.Column(db.String(10))
+    experience = db.Column(db.Integer)
+    contact = db.Column(db.String(10))
+    email = db.Column(db.String(100),unique=True)
+    password = db.Column(db.String(100))
+    patients = db.relationship('Patients',backref="owner")
+
+    def __init__(self,name,desig,exp,contact,email,password):
+        self.name=name,
+        self.designation = desig,
+        self.experience = exp,
+        self.contact = contact,
+        self.email = email,
+        self.password = password
+
+class Patients(db.Model):
+    __tablename__='patients'
+    pid = db.Column(db.Integer, primary_key = True)
+    name = db.Column(db.String(100))
+    age = db.Column(db.Integer)
+    gender = db.Column(db.String(10))
+    result = db.Column(db.Integer)
+    contact = db.Column(db.String(100))
+    owner_id = db.Column(db.Integer, db.ForeignKey('doctor.doc_id'))
+
+    def __init__(self,name,age,gender,result,contact,owner):
+        self.name = name,
+        self.age = age,
+        self.gender = gender,
+        self.result = result,
+        self.contact = contact,
+        self.owner_id = owner
+
+_details = None
+
+#User
 @app.route('/hello')
 def home():
     message = "Hello World, I'm Ratan"
     return Response(json.dumps(message), status=200, mimetype='application/json')
-
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -182,4 +239,99 @@ def predict():
         db.session.add(mydata)
         db.session.commit()
         return Response(json.dumps(result), status=201, mimetype='application/json')
+
+@app.route('/result',methods=['POST'])
+def result():
+    if request.method == 'POST':
+        request_data = json.loads(request.data)
+        _email = request_data['email']
+        user = User.query.filter_by(email=_email).first()
+        query = Questions.query.filter_by(owner_id=user.user_id)
+        results = query.order_by(Questions.id.desc()).first()
+        res = json.dumps({
+            "result":results.res,
+            "age":results.age,
+        })
         
+        return Response(res, status=200, mimetype='application/json')
+
+
+
+
+
+
+#Doctor
+@app.route('/doctor-register',methods=['POST'])
+def docRegister():
+    if request.method == "POST":
+        request_data = json.loads(request.data)
+        _name = request_data['name']
+        _designation = request_data['designation']
+        _experience = request_data['experience']
+        _contact = request_data['contact']
+        _email = request_data['email']
+        _password = request_data['password']
+        _checkPassword = request_data['checkPassword']
+        print(request_data)
+
+        if request.method == 'POST':
+            user = Doctor.query.filter_by(email=_email).first()
+            if user:
+                message = "User Already Exists"
+                return Response(json.dumps(message), status=500, mimetype='application/json')
+            elif _checkPassword != _password:
+                message = "Password Mismatch"
+                return Response(json.dumps(message), status=500, mimetype='application/json')
+            else:
+                adduser = Doctor(_name,_designation,_experience,_contact,_email,_password)
+                db.session.add(adduser)
+                db.session.commit()
+                message = "User successfully registered "
+                return Response(json.dumps(message), status=200, mimetype='application/json')
+        else:
+            message = "All fields are required"
+            return Response(json.dumps(message), status=500, mimetype='application/json')
+
+@app.route('/doctor-login',methods=['POST'])
+def docLogin():
+    if request.method == "POST":
+        request_data = json.loads(request.data)
+        print(request_data)
+        _email = request_data['email']
+        _password = request_data['password']
+        print(request_data)
+       
+        if _email and _password:
+            user = Doctor.query.filter_by(email=_email,password=_password).first()
+            if user:
+                res = {
+                    "doctor":request_data['email'],
+                }
+                return Response(json.dumps(res), status=201, mimetype='application/json')
+            else:
+                message = "Invalid Credentials"
+                return Response(json.dumps(message), status=500, mimetype='application/json')
+        else:
+            message = "All fields are required"
+            return Response(json.dumps(message), status=500, mimetype='application/json')
+
+@app.route('/addpatient',methods=['POST'])
+def addPatient():
+    if request.method == "POST":
+        request_data = json.loads(request.data)
+        print(request_data)
+        _name = request_data['name']
+        _age = request_data['age']
+        _gender = request_data['gender']
+        _result = request_data['result']
+        _contact = request_data['contact']
+        _email = request_data['email']        
+   
+        user = Doctor.query.filter_by(email=_email).first()
+        patientData = Patients(_name,_age,_gender,_result,_contact,user.doc_id)
+        db.session.add(patientData)
+        db.session.commit()
+        result = {
+            "message":"Successfully added"
+        }
+        return Response(json.dumps(result), status=201, mimetype='application/json')
