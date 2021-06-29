@@ -3,6 +3,8 @@ import pickle
 import json
 from flask_sqlalchemy import SQLAlchemy
 
+
+
 from flask import Flask, request, Response,jsonify
 from flask.json import jsonify
 from flask_cors import CORS, cross_origin
@@ -92,6 +94,26 @@ class Questions(db.Model):
             'owner':self.owner_id
         }
 
+
+class Patients(db.Model):
+    __tablename__='patients'
+    pid = db.Column(db.Integer, primary_key = True)
+    name = db.Column(db.String(100))
+    age = db.Column(db.Integer)
+    gender = db.Column(db.String(10))
+    result = db.Column(db.Integer)
+    contact = db.Column(db.String(100))
+    owner_id = db.Column(db.Integer, db.ForeignKey('doctor.doc_id'))
+
+    def __init__(self,name,age,gender,result,contact,owner):
+        self.name = name,
+        self.age = age,
+        self.gender = gender,
+        self.result = result,
+        self.contact = contact,
+        self.owner_id = owner
+
+
 class Doctor(db.Model):
     __tablename__ = 'doctor'
     doc_id = db.Column(db.Integer, primary_key = True)
@@ -111,23 +133,6 @@ class Doctor(db.Model):
         self.email = email,
         self.password = password
 
-class Patients(db.Model):
-    __tablename__='patients'
-    pid = db.Column(db.Integer, primary_key = True)
-    name = db.Column(db.String(100))
-    age = db.Column(db.Integer)
-    gender = db.Column(db.String(10))
-    result = db.Column(db.Integer)
-    contact = db.Column(db.String(100))
-    owner_id = db.Column(db.Integer, db.ForeignKey('doctor.doc_id'))
-
-    def __init__(self,name,age,gender,result,contact,owner):
-        self.name = name,
-        self.age = age,
-        self.gender = gender,
-        self.result = result,
-        self.contact = contact,
-        self.owner_id = owner
 
 _details = None
 
@@ -255,10 +260,37 @@ def result():
         
         return Response(res, status=200, mimetype='application/json')
 
+@app.route('/doctors',methods=['GET'])
+def doctors():
+    if request.method == "GET":
+        alldoctors = Doctor.query.all()
+        result = [d.__dict__ for d in alldoctors]
+        for i in range(len(result)):
+            result[i].pop('_sa_instance_state')
+        print(result)
+        message = "Success"
+        return Response(json.dumps(result), status=200, mimetype='application/json')
 
-
-
-
+@app.route('/addpatient',methods=['POST'])
+def addPatient():
+    if request.method == "POST":
+        request_data = json.loads(request.data)
+        print(request_data)
+        _name = request_data['name']
+        _age = request_data['age']
+        _gender = request_data['gender']
+        _result = request_data['result']
+        _contact = request_data['contact']
+        _email = request_data['email']        
+   
+        user = Doctor.query.filter_by(email=_email).first()
+        patientData = Patients(_name,_age,_gender,_result,_contact,user.doc_id)
+        db.session.add(patientData)
+        db.session.commit()
+        result = {
+            "message":"Successfully added"
+        }
+        return Response(json.dumps(result), status=201, mimetype='application/json')
 
 #Doctor
 @app.route('/doctor-register',methods=['POST'])
@@ -315,23 +347,18 @@ def docLogin():
             message = "All fields are required"
             return Response(json.dumps(message), status=500, mimetype='application/json')
 
-@app.route('/addpatient',methods=['POST'])
-def addPatient():
-    if request.method == "POST":
+@app.route('/mypatients',methods=['POST'])
+def getPatients():
+    if request.method == 'POST':
         request_data = json.loads(request.data)
-        print(request_data)
-        _name = request_data['name']
-        _age = request_data['age']
-        _gender = request_data['gender']
-        _result = request_data['result']
-        _contact = request_data['contact']
-        _email = request_data['email']        
-   
-        user = Doctor.query.filter_by(email=_email).first()
-        patientData = Patients(_name,_age,_gender,_result,_contact,user.doc_id)
-        db.session.add(patientData)
-        db.session.commit()
-        result = {
-            "message":"Successfully added"
-        }
-        return Response(json.dumps(result), status=201, mimetype='application/json')
+        _email = request_data['email']
+        doctor = Doctor.query.filter_by(email=_email).first()
+        patients = Patients.query.filter_by(owner_id=doctor.doc_id).all()
+        result = [d.__dict__ for d in patients]
+        for i in range(len(result)):
+            result[i].pop('_sa_instance_state')
+        print(result)
+        message = "Success"
+        return Response(json.dumps(result), status=200, mimetype='application/json')
+
+
