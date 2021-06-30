@@ -45,16 +45,18 @@ class Questions(db.Model):
     q8 = db.Column(db.Integer)
     q9 = db.Column(db.Integer)
     q10 = db.Column(db.Integer)
+    name = db.Column(db.String(100))
     age = db.Column(db.Integer)
     gender = db.Column(db.Integer)
     jaundice = db.Column(db.Integer)
     family = db.Column(db.Integer)
     who = db.Column(db.Integer)
     res = db.Column(db.Integer)
+    contact = db.Column(db.String(10))
     owner_id = db.Column(db.Integer, db.ForeignKey('user.user_id'))
 
 
-    def __init__(self, q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, age, gender, jaundice, family, who,res,owner):
+    def __init__(self, q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, name,age, gender, jaundice, family, who,res,contact,owner):
         self.q1 = q1
         self.q2 = q2
         self.q3 = q3
@@ -65,35 +67,15 @@ class Questions(db.Model):
         self.q8 = q8
         self.q9 = q9
         self.q10 = q10
+        self.name = name
         self.age = age
         self.gender = gender
         self.jaundice = jaundice
         self.family = family
         self.who = who
         self.res = res
+        self.contact = contact
         self.owner_id = owner
-
-    def to_json(self):
-        return {
-            'id':self.id,
-            'q1':self.q1,
-            'q2':self.q2,
-            'q3':self.q3,
-            'q4':self.q4,
-            'q5':self.q5,
-            'q6':self.q6,
-            'q7':self.q7,
-            'q8':self.q8,
-            'q9':self.q9,
-            'q10':self.q10,
-            'age':self.age,
-            'gender':self.gender,
-            'jaundice':self.jaundice,
-            'who':self.who,
-            'result':self.res,
-            'owner':self.owner_id
-        }
-
 
 class Patients(db.Model):
     __tablename__='patients'
@@ -178,7 +160,7 @@ def login():
         print(request_data)
         _email = request_data['email']
         _password = request_data['password']
-        print(request_data)
+       
        
         if _email and _password:
             user = User.query.filter_by(email=_email,password=_password).first()
@@ -212,7 +194,7 @@ def predict():
         questions = list(request_data.values())
         _email = request_data['email']        
         
-        features = [0 if int(x)<0 else 1 for x in questions[:10]] + [int(x) for x in _details[1:]]
+        features = [0 if int(x)<0 else 1 for x in questions[:10]] + [int(x) for x in _details[1:6]]
         final_features = [np.array(features)]
         prediction = model.predict(final_features)
 
@@ -220,7 +202,7 @@ def predict():
         print(prediction)
 
         result = True if prediction[0] == 1 else False
-        _details = None
+        
 
         user = User.query.filter_by(email=_email).first()
 
@@ -234,15 +216,19 @@ def predict():
         q8 = features[7]
         q9 = features[8]
         q10 = features[9]
-        q11 = features[11]
-        q12 = features[10]
-        q13 = features[12]
-        q14 = features[13]
-        q15 = features[14]
+        name = _details[0]
+        age = features[11]
+        gender = features[10]
+        jaundice = features[12]
+        family = features[13]
+        who = features[14]
+        contact = _details[-1]
 
-        mydata = Questions(q1,q2,q3,q4,q5,q6,q7,q8,q9,q10,q11,q12,q13,q14,q15,result,user.user_id)
+        mydata = Questions(q1,q2,q3,q4,q5,q6,q7,q8,q9,q10,name,age,gender,jaundice,family,who,result,contact,user.user_id)
+        print(mydata)
         db.session.add(mydata)
         db.session.commit()
+        _details = None
         return Response(json.dumps(result), status=201, mimetype='application/json')
 
 @app.route('/result',methods=['POST'])
@@ -254,8 +240,11 @@ def result():
         query = Questions.query.filter_by(owner_id=user.user_id)
         results = query.order_by(Questions.id.desc()).first()
         res = json.dumps({
+            "name":results.name,
             "result":results.res,
+            "gender":results.gender,
             "age":results.age,
+            "contact":results.contact
         })
         
         return Response(res, status=200, mimetype='application/json')
@@ -348,7 +337,7 @@ def docLogin():
             return Response(json.dumps(message), status=500, mimetype='application/json')
 
 @app.route('/mypatients',methods=['POST'])
-def getPatients():
+def myPatients():
     if request.method == 'POST':
         request_data = json.loads(request.data)
         _email = request_data['email']
