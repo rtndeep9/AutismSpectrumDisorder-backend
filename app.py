@@ -3,8 +3,6 @@ import pickle
 import json
 from flask_sqlalchemy import SQLAlchemy
 
-
-
 from flask import Flask, request, Response,jsonify
 from flask.json import jsonify
 from flask_cors import CORS, cross_origin
