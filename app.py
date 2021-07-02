@@ -103,15 +103,17 @@ class Doctor(db.Model):
     contact = db.Column(db.String(10))
     email = db.Column(db.String(100),unique=True)
     password = db.Column(db.String(100))
+    url = db.Column(db.String(100))
     patients = db.relationship('Patients',backref="owner")
 
-    def __init__(self,name,desig,exp,contact,email,password):
+    def __init__(self,name,desig,exp,contact,email,password,url):
         self.name=name,
         self.designation = desig,
         self.experience = exp,
         self.contact = contact,
         self.email = email,
         self.password = password
+        self.url = url
 
 
 _details = None
@@ -289,6 +291,7 @@ def docRegister():
         _experience = request_data['experience']
         _contact = request_data['contact']
         _email = request_data['email']
+        _url = request_data['url']
         _password = request_data['password']
         _checkPassword = request_data['checkPassword']
         print(request_data)
@@ -302,7 +305,7 @@ def docRegister():
                 message = "Password Mismatch"
                 return Response(json.dumps(message), status=500, mimetype='application/json')
             else:
-                adduser = Doctor(_name,_designation,_experience,_contact,_email,_password)
+                adduser = Doctor(_name,_designation,_experience,_contact,_email,_password,_url)
                 db.session.add(adduser)
                 db.session.commit()
                 message = "User successfully registered "
@@ -348,4 +351,20 @@ def myPatients():
         message = "Success"
         return Response(json.dumps(result), status=200, mimetype='application/json')
 
+@app.route('/connect',methods=['POST'])
+def connect():
+    if request.method == 'POST':
+        request_data = json.loads(request.data)
+        _email = request_data['email']
+        _pid = request_data['pid']
+        doctor = Doctor.query.filter_by(email=_email).first()
+        patient = Patients.query.filter_by(pid=_pid).first()
+        pname = patient.name
+        pcontact = patient.contact
+        dname = doctor.name
+        url = doctor.url
+        print(pname,pcontact,dname,url)
+
+        message = "Success"
+        return Response(json.dumps(message), status=200, mimetype='application/json')
 
