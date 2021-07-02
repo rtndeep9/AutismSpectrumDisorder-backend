@@ -275,7 +275,7 @@ def addPatient():
         db.session.add(patientData)
         db.session.commit()
         result = {
-            "message":"Successfully added"
+            "message":"Patient details sent to the doctor"
         }
         return Response(json.dumps(result), status=201, mimetype='application/json')
 
