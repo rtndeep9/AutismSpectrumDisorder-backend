@@ -1,6 +1,7 @@
 import numpy as np
 import pickle
 import json
+import vonage
 from flask_sqlalchemy import SQLAlchemy
 
 from flask import Flask, request, Response,jsonify
@@ -10,6 +11,9 @@ from sqlalchemy.orm import backref
 
 app = Flask(__name__)
 cors = CORS(app)
+
+client = vonage.Client(key="a0975033", secret="KE9SdV4Y5TEKdmzH")
+sms = vonage.Sms(client)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:''@127.0.0.1:3306/asd'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -365,6 +369,20 @@ def connect():
         url = doctor.url
         print(pname,pcontact,dname,url)
 
-        message = "Success"
-        return Response(json.dumps(message), status=200, mimetype='application/json')
 
+        responseData = sms.send_message(
+        {
+            "from": "Vonage APIs",
+            "to": "919448312699",
+            "text": "Hello "+str(pname)+", Your doctor Dr."+str(dname)+" is now available on google meet. Click on the link to join "+str(url),
+        }
+        )
+        
+        if responseData["messages"][0]["status"] == "0":
+            print("Message sent successfully.")
+            message = url
+            return Response(json.dumps(message), status=200, mimetype='application/json')
+        else:
+            print(f"Message failed with error: {responseData['messages'][0]['error-text']}")
+            message = "An error occured"
+            return Response(json.dumps(message), status=500, mimetype='application/json')
