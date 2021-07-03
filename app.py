@@ -370,19 +370,21 @@ def connect():
         print(pname,pcontact,dname,url)
 
 
-        responseData = sms.send_message(
-        {
-            "from": "Vonage APIs",
-            "to": "919448312699",
-            "text": "Hello "+str(pname)+", Your doctor Dr."+str(dname)+" is now available on google meet. Click on the link to join "+str(url),
-        }
-        )
+        # responseData = sms.send_message(
+        # {
+        #     "from": "Vonage APIs",
+        #     "to": "919448312699",
+        #     "text": "Hello "+str(pname)+", Your doctor Dr."+str(dname)+" is now available on google meet. Click on the link to join "+str(url),
+        # }
+        # )
         
-        if responseData["messages"][0]["status"] == "0":
-            print("Message sent successfully.")
-            message = url
-            return Response(json.dumps(message), status=200, mimetype='application/json')
-        else:
-            print(f"Message failed with error: {responseData['messages'][0]['error-text']}")
-            message = "An error occured"
-            return Response(json.dumps(message), status=500, mimetype='application/json')
+        # if responseData["messages"][0]["status"] == "0":
+        #     print("Message sent successfully.")
+        #     message = url
+        #     return Response(json.dumps(message), status=200, mimetype='application/json')
+        # else:
+        #     print(f"Message failed with error: {responseData['messages'][0]['error-text']}")
+        #     message = "An error occured"
+        #     return Response(json.dumps(message), status=500, mimetype='application/json')
+        message = url
+        return Response(json.dumps(message), status=200, mimetype='application/json')
