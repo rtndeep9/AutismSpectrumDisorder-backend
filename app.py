@@ -97,12 +97,12 @@ class Patients(db.Model):
         self.contact = contact,
         self.owner_id = owner
 
-
 class Doctor(db.Model):
     __tablename__ = 'doctor'
     doc_id = db.Column(db.Integer, primary_key = True)
     name = db.Column(db.String(100))
     designation = db.Column(db.String(10))
+    qualification = db.Column(db.String(100))
     experience = db.Column(db.Integer)
     contact = db.Column(db.String(10))
     email = db.Column(db.String(100),unique=True)
@@ -110,15 +110,15 @@ class Doctor(db.Model):
     url = db.Column(db.String(100))
     patients = db.relationship('Patients',backref="owner")
 
-    def __init__(self,name,desig,exp,contact,email,password,url):
+    def __init__(self,name,desig,quali,exp,contact,email,password,url):
         self.name=name,
         self.designation = desig,
+        self.qualification = quali
         self.experience = exp,
         self.contact = contact,
         self.email = email,
         self.password = password
         self.url = url
-
 
 _details = None
 
@@ -293,6 +293,7 @@ def docRegister():
         _name = request_data['name']
         _designation = request_data['designation']
         _experience = request_data['experience']
+        _qualification = request_data['qualification']
         _contact = request_data['contact']
         _email = request_data['email']
         _url = request_data['url']
@@ -309,7 +310,7 @@ def docRegister():
                 message = "Password Mismatch"
                 return Response(json.dumps(message), status=500, mimetype='application/json')
             else:
-                adduser = Doctor(_name,_designation,_experience,_contact,_email,_password,_url)
+                adduser = Doctor(_name,_designation,_qualification,_experience,_contact,_email,_password,_url)
                 db.session.add(adduser)
                 db.session.commit()
                 message = "User successfully registered "
@@ -351,6 +352,17 @@ def myPatients():
         result = [d.__dict__ for d in patients]
         for i in range(len(result)):
             result[i].pop('_sa_instance_state')
+        print(result)
+        message = "Success"
+        return Response(json.dumps(result), status=200, mimetype='application/json')
+
+@app.route('/doctorname',methods=['POST'])
+def doctorname():
+    if request.method == 'POST':
+        request_data = json.loads(request.data)
+        _email = request_data['email']
+        doctor = Doctor.query.filter_by(email=_email).first()
+        result = doctor.name
         print(result)
         message = "Success"
         return Response(json.dumps(result), status=200, mimetype='application/json')
