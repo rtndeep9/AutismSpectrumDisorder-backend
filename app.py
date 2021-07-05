@@ -2,6 +2,7 @@ import numpy as np
 import pickle
 import json
 import vonage
+import time
 from flask_sqlalchemy import SQLAlchemy
 
 from flask import Flask, request, Response,jsonify
@@ -261,6 +262,7 @@ def doctors():
         for i in range(len(result)):
             result[i].pop('_sa_instance_state')
         print(result)
+        time.sleep(1.5)
         message = "Success"
         return Response(json.dumps(result), status=200, mimetype='application/json')
 
@@ -352,8 +354,10 @@ def myPatients():
         result = [d.__dict__ for d in patients]
         for i in range(len(result)):
             result[i].pop('_sa_instance_state')
+        time.sleep(1.5)
         print(result)
         message = "Success"
+
         return Response(json.dumps(result), status=200, mimetype='application/json')
 
 @app.route('/doctorname',methods=['POST'])
@@ -381,7 +385,7 @@ def connect():
         url = doctor.url
         print(pname,pcontact,dname,url)
 
-
+        time.sleep(3)
         # responseData = sms.send_message(
         # {
         #     "from": "Vonage APIs",
